@@ -10,33 +10,51 @@ if __name__ == "__main__":
     client = None
     connection = MongoDBConnection()
     client = connection.connect()
-    studyUID="1.3.6.1.4.1.14519.5.2.1.2135.6389.110097821188395872519993504556"
-    result = client["playground"]["dicom_pesi"].aggregate(
-        [
-            {
-                "$match": {
-                    "studies.StudyInstanceUID": studyUID
-                }
-            },
-            {"$unwind": "$studies"},
-            #{"$unwind": "$studies.StudyInstanceUID"},
-            {
-                "$match": {
-                    "studies.StudyInstanceUID": studyUID
-                }
-            },
-            {
-    "$project":
-      {
-        "_id": 0,
-      },
-  },
-        ]
-    )
-    output = list(result)
-    print(type(output))
-    import json
-    with open('./out1.json', 'w') as agg_out:
-        json.dump(output, agg_out)
+    studyUID="2.25.77168008002489147186120709736842771958"
+    uploadID="b0cdf329-4248-4769-a9e6-03fde557c0ff"
+#   the below aggregator pipeline does not work for given schema as per dersired result.    
+#     result = client["playground"]["dicom_pesi"].aggregate(
+#         [
+#             {
+#                 "$match": {
+#                     "studies.StudyInstanceUID": studyUID
+#                 }
+#             },
+#             {"$unwind": "$studies"},
+#             {
+#                 "$match": {
+#                     "studies.StudyInstanceUID": studyUID
+#                 }
+#             },
+#             {
+#     "$project":
+#       {
+#         "_id": 0,
+#       },
+#   },
+#         ]
+#     )
 
+    filter={
+        'studies.StudyInstanceUID': '2.25.111992828440641426467630674457300418038', 
+        'uploadId': 'b0cdf329-4248-4769-a9e6-03fde557c0ff'
+    }
+    project={
+        '_id': 0
+    }
+    result = client['playground']['dicom_pesi'].find(
+    filter=filter,
+    projection=project
+    )
+
+    data = list(result)
+
+    from pprint import pprint
+    # pprint(data)
+
+    for item in data[0].values():
+        if type(item) == list:
+            for studies in item:
+                if studies["StudyInstanceUID"] == studyUID:
+                    pprint(studies)
     connection.disconnect()
